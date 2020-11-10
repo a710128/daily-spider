@@ -24,7 +24,8 @@ function startWorker(plugin_path, plugin_name) {
     child.send({
         server: JSON_CONFIG.server,
         config: JSON_CONFIG.plugins[plugin_name],
-        dry: argv.dry
+        dry: argv.dry,
+        cleanup: argv.clean,
     });
 }
 

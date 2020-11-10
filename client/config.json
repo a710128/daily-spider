@@ -15,6 +15,9 @@
         },
         "sina": {
             "path": "../plugins/sina/main.js"
+        },
+        "baijiahao": {
+            "path": "../plugins/baijiahao/main.js"
         }
     }
 }

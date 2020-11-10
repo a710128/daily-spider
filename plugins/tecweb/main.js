@@ -66,7 +66,7 @@ async function read_article(url, topic) {
     };
 }
 
-module.exports = async function(name, config) {
+async function main(name, config) {
     let db_path = config.db_path ||  path.join(__dirname, "db.sqlite3");
     let new_db = false;
 
@@ -98,4 +98,13 @@ module.exports = async function(name, config) {
             this.addResult(await read_article(news.url, news.topic))
         }
     }
+}
+
+async function cleanup(name, config) {
+
+}
+
+module.exports = {
+    main,
+    cleanup
 }

@@ -25,6 +25,12 @@ let argv = yargs.option(
             type: 'boolean',
             default: false,
             description: 'Run client as daemon'
+    }).option(
+        'clean', {
+            alias: 'C',
+            type: 'boolean',
+            default: false,
+            description: 'Run clean up script'
     }).help("help").argv;
 
 if (argv.plugin) {

@@ -145,7 +145,7 @@ async function read_question(qid, topic) {
     return ret;
 }
 
-module.exports = async function(name, config) {
+async function main(name, config) {
     let db_path = config.db_path ||  path.join(__dirname, "db.sqlite3");
     let new_db = false;
 
@@ -192,4 +192,13 @@ module.exports = async function(name, config) {
         }
         await db_set_done(db, question.id);
     }
+}
+
+async function cleanup(name, config) {
+
+}
+
+module.exports =  {
+    main,
+    cleanup
 }

@@ -33,40 +33,45 @@ process.on("message", async (msg) => {
     let config = msg.config;
     let server = msg.server;
     let dry = msg.dry;
+    let clean = msg.cleanup;
 
     let exit_code = 0;
     console.log("======================" + ( new Date().toLocaleString() ) + "======================");
     console.error("======================" + ( new Date().toLocaleString() ) + "======================");
     try {
         let plugin = require(plugin_path);
-        let client = new Client(plugin_name);
-        await plugin.apply( client, [plugin_name, config] )
-        
-        let ssend = "";
-        let cnt = 0;
-        for (let r of client.getResults()) {
-            ssend += JSON.stringify(r) + "\n";
-            cnt ++;
-        }
-
-        if (!dry) {
-            let res = await Axios.post(server + "/add", ssend, {
-                maxBodyLength: Infinity,
-                maxContentLength: Infinity
-            });
-            if (res.data.code == 0) {
-                console.log(res.data);
-                console.log(`Total length: ${cnt}`);
-            } else {
-                console.error(res.data);
-                exit_code = res.data.code;
-            }
+        if (clean) {
+            /* run cleanup */
+            await plugin.cleanup(plugin_name, config);
         } else {
-            console.log("Dry run result:\n");
-            console.log(ssend);
-            console.log("\n");
-        }
-        
+            let client = new Client(plugin_name);
+            await plugin.main.apply( client, [plugin_name, config] )
+            
+            let ssend = "";
+            let cnt = 0;
+            for (let r of client.getResults()) {
+                ssend += JSON.stringify(r) + "\n";
+                cnt ++;
+            }
+
+            if (!dry) {
+                let res = await Axios.post(server + "/add", ssend, {
+                    maxBodyLength: Infinity,
+                    maxContentLength: Infinity
+                });
+                if (res.data.code == 0) {
+                    console.log(res.data);
+                    console.log(`Total length: ${cnt}`);
+                } else {
+                    console.error(res.data);
+                    exit_code = res.data.code;
+                }
+            } else {
+                console.log("Dry run result:\n");
+                console.log(ssend);
+                console.log("\n");
+            }
+        } /* not run cleanup */
     } catch (e) {
         console.error(e);
         exit_code = 1;
