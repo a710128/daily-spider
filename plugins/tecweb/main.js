@@ -101,7 +101,35 @@ async function main(name, config) {
 }
 
 async function cleanup(name, config) {
+    let db_path = config.db_path ||  path.join(__dirname, "db.sqlite3");
+    let new_db = false;
 
+    try {
+        fs.accessSync(db_path, fs.constants.R_OK | fs.constants.W_OK);
+    } catch (e) {
+        new_db = true;
+    }
+    if (new_db) return;
+
+    let db = await new Promise((resolve) => {
+        let v = new sqlite3.Database(db_path, (err) => {
+            if (err) {
+                console.error(err);
+                resolve(null);
+            } else {
+                resolve(v);
+            }
+        });
+    });
+    if (!db) return;
+
+    let threshold = parseInt(Date.now() / 100000 - 36 * 24 * 60);
+    await new Promise((resolve, reject) => {
+        db.run("DELETE FROM article WHERE date < ?", threshold, (err) => {
+            if (err) reject(err);
+            else resolve();
+        });
+    });
 }
 
 module.exports = {
