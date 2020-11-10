@@ -32,6 +32,7 @@ process.on("message", async (msg) => {
     let plugin_path = process.argv[3];
     let config = msg.config;
     let server = msg.server;
+    let dry = msg.dry;
 
     let exit_code = 0;
     console.log("======================" + ( new Date().toLocaleString() ) + "======================");
@@ -40,19 +41,32 @@ process.on("message", async (msg) => {
         let plugin = require(plugin_path);
         let client = new Client(plugin_name);
         await plugin.apply( client, [plugin_name, config] )
-        let total = 0;
+        
+        let ssend = "";
+        let cnt = 0;
         for (let r of client.getResults()) {
-            let res = await Axios.post(server + "/add", {
-                batch: [r]
+            ssend += JSON.stringify(r) + "\n";
+            cnt ++;
+        }
+
+        if (!dry) {
+            let res = await Axios.post(server + "/add", ssend, {
+                maxBodyLength: Infinity,
+                maxContentLength: Infinity
             });
             if (res.data.code == 0) {
-                total += 1;
+                console.log(res.data);
+                console.log(`Total length: ${cnt}`);
             } else {
                 console.error(res.data);
                 exit_code = res.data.code;
             }
+        } else {
+            console.log("Dry run result:\n");
+            console.log(ssend);
+            console.log("\n");
         }
-        console.log(`Send ${total} data`);
+        
     } catch (e) {
         console.error(e);
         exit_code = 1;

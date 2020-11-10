@@ -9,6 +9,12 @@
         },
         "zhihu": {
             "path": "../plugins/zhihu/main.js"
+        },
+        "tecweb": {
+            "path": "../plugins/tecweb/main.js"
+        },
+        "sina": {
+            "path": "../plugins/sina/main.js"
         }
     }
 }

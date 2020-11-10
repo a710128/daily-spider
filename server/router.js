@@ -9,7 +9,8 @@ var router = express.Router();
 const DATA_DIR = path.join(__dirname, JSON_CONFIG.data_dir);
 
 var global = {
-    latest_file: util.getLatestFile(DATA_DIR)
+    latest_file: util.getLatestFile(DATA_DIR),
+    latest_fd : util.getLatestFD(DATA_DIR),
 }
 
 
@@ -20,7 +21,6 @@ router.use((req, res, next) => {
         res.status(400).end("Fuck you!");
     }
 });
-router.use(express.json());
 
 router.get("/list", (req, res) => {
     fs.readdir( DATA_DIR, (err, files) => {
@@ -43,46 +43,21 @@ router.get(/^\/file\/([0-9]{4}(?:_[0-9]{2}){5})$/, (req, res) => {
 });
 
 router.post("/add", (req, res) => {
-    let batch = req.body.batch;
-    if (batch == undefined) {
-        res.status(400).json({
-            code: -1,
-            msg: "Parameters error"
-        });
-        return;
-    }
-
-    if (!Array.isArray(batch)) {
-        batch = [batch]
-    }
-    for (let i = 0; i < batch.length; ++ i) {
-        if (batch[i].src == undefined || batch[i].topic == undefined || batch[i].data == undefined) {
-            res.status(400).json({
-                code: -1,
-                msg: "Parameters error"
-            });
-            return;
+    let nwsize = 0;
+    req.on("data", (chunk) => {
+        nwsize = util.writeFile( global.latest_fd, chunk );
+    })
+    req.on("end", () => {
+        if (nwsize > JSON_CONFIG.max_file_size) {
+            fs.closeSync(global.latest_fd);
+            global.latest_file = util.createFile( DATA_DIR, util.formatDate(new Date()) );
+            global.latest_fd = util.getLatestFD( DATA_DIR );
         }
-    }
-    let buffer = "";
-    for (let i = 0; i < batch.length; ++ i) {
-        let src = batch[i].src,
-            topic = batch[i].topic,
-            data = batch[i].data,
-            meta = batch[i].meta;
-        meta = meta || {};
-        buffer += JSON.stringify({
-            src, topic, data, meta
-        }) + "\n";
-    }
-    let nwsize = util.writeFile( DATA_DIR, global.latest_file, buffer );
-    if (nwsize > JSON_CONFIG.max_file_size) {
-        global.latest_file = util.createFile( DATA_DIR, util.formatDate(new Date()) );
-    }
-    res.json({
-        code: 0,
-        msg: "ok"
-    });
+        res.json({
+            code: 0,
+            msg: "ok"
+        });
+    })
 });
 
 

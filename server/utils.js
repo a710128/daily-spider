@@ -19,11 +19,14 @@ module.exports = {
             return files.sort().reverse()[0];
         }
     },
-    writeFile(dir, fname, data) {
-        let fd = fs.openSync( path.join(dir, fname), "as");
+    getLatestFD(dir) {
+        let fname = this.getLatestFile(dir);
+        let fd = fs.openSync(path.join(dir, fname), "as");
+        return fd;
+    },
+    writeFile(fd, data) {
         fs.writeSync(fd, data);
         let stat = fs.fstatSync(fd);
-        fs.closeSync(fd);
         return stat.size;
     }
 }
