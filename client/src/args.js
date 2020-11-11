@@ -2,23 +2,23 @@ const { boolean } = require("yargs");
 const yargs = require("yargs");
 
 let argv = yargs.option(
-    'config', {
-        alias: 'c',
-        type: 'string',
-        default: './config.json',
-        description: 'Path to config file'
+        'config', {
+            alias: 'c',
+            type: 'string',
+            default: './config.json',
+            description: 'Path to config file'
     }).option(
-    'dry', {
-        alias: 'd',
-        type: 'boolean',
-        default: false,
-        description: 'Dry run'
+        'dry', {
+            alias: 'd',
+            type: 'boolean',
+            default: false,
+            description: 'Dry run'
     }).option(
-    'plugin', {
-        alias: 'p',
-        type: 'string',
-        array: true,
-        description: 'Allowed plugins'
+        'plugin', {
+            alias: 'p',
+            type: 'string',
+            array: true,
+            description: 'Allowed plugins'
     }).option(
         'daemon', {
             alias: 'D',
@@ -31,7 +31,9 @@ let argv = yargs.option(
             type: 'boolean',
             default: false,
             description: 'Run clean up script'
-    }).help("help").argv;
+    })
+    .strictOptions()
+    .help("help").argv;
 
 if (argv.plugin) {
     let nw_plugin = [];

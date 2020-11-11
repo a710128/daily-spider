@@ -113,6 +113,7 @@ async function read_question(qid, topic) {
                     return {
                         id: v.id,
                         type: v.type,
+                        comment: false,
                         question: {
                             id: v.question.id,
                             type: v.question.type,
