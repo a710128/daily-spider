@@ -113,7 +113,6 @@ async function read_question(qid, topic) {
                     return {
                         id: v.id,
                         type: v.type,
-                        comment: false,
                         question: {
                             id: v.question.id,
                             type: v.question.type,
@@ -188,6 +187,7 @@ async function main(name, config) {
 
     for (let question of processing_qs) {
         let answers = await read_question(question.id, question.topic);
+
         for (let ans of answers) {
             this.addResult(ans);
         }

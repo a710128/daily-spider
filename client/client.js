@@ -2,6 +2,7 @@ const path = require("path");
 const fs = require("fs");
 const child_process = require("child_process");
 const argv = require("./src/args");
+const { ADDRCONFIG } = require("dns");
 
 const JSON_CONFIG = require(argv.config);
 const PLUGINS = Object.keys(JSON_CONFIG.plugins).filter((v) => {
@@ -27,7 +28,32 @@ function startWorker(plugin_path, plugin_name) {
         dry: argv.dry,
         cleanup: argv.clean,
     });
+
+    child.on("exit", (code) => {
+        console.log(new Date().toISOString(), plugin_name, "stoped with code", code);
+    });
 }
+
+
+// Get last pid
+let pid_file = JSON_CONFIG.pid_file || "/var/run/dailyspider.pid";
+let last_pid = 0;
+try {
+    last_pid = parseInt(fs.readFileSync(pid_file).toString());
+} catch(e) {
+    console.error(e);
+}
+
+// check whether process is running
+if (last_pid) {
+    if (require("is-running")(last_pid)) {
+        console.error("Spider client is running");
+        process.exit(1);
+    }
+}
+
+// set new pid
+fs.writeFileSync( pid_file, process.pid.toString() );
 
 for (let i in PLUGINS) {
     let plugin_name = PLUGINS[i];
