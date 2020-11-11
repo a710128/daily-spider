@@ -136,3 +136,5 @@ data/
 .vscode
 
 *.sqlite3
+
+*.pid

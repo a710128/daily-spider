@@ -159,9 +159,17 @@ async function main(name, config) {
             process_article.push(article);
         }
     }
+
+    let skip_cnt = 0;
     for (let article of process_article) {
-        this.addResult(await read_article(article));
+        try {
+            this.addResult(await read_article(article));
+        } catch (e) {
+            // skip error ones
+            skip_cnt ++;
+        }
     }
+    console.log(`Skip ${skip_cnt} articles`);
 }
 
 
