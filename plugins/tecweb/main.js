@@ -3,25 +3,37 @@ const sqlite3 = require("sqlite3");
 const path = require("path");
 const fs = require("fs");
 const cheerio = require("cheerio");
+const { time } = require("console");
 const minify = require('html-minifier').minify;
 
 
 function db_init(db) {
     return new Promise((resolve, reject) => {
-        db.run("CREATE TABLE article (id INT NOT NULL, date INT NOT NULL);", (err) => {
+        db.run("CREATE TABLE article (id INT NOT NULL, date INT NOT NULL, update INT NOT NULL);", (err) => {
             if (err) reject(err);
-            else resolve();
+            else {
+                db.run("CREATE INDEX qryidx on article (id, date);", (err) => {
+                    if (err) reject(err);
+                    else resolve();
+                });
+            }
         });
     });
 }
 
 async function db_query(db, date_id, sh_id) {
+    let time = parseInt(Date.now() / 1000);
     return new Promise((resolve, reject) => {
         db.get("SELECT * FROM article WHERE id = ? AND date = ?", sh_id, date_id, (err, row) => {
             if (err) reject(err);
-            else if (row) resolve(false);
+            else if (row) {
+                db.run("UPDATE article SET update = ? WHERE id = ? and date = ?", time, sh_id, date_id, (err) => {
+                    if (err) reject(err);
+                    else resolve(false);
+                });
+            }
             else {
-                db.run("INSERT INTO article (id, date) VALUES (?, ?);", sh_id, date_id, (err) => {
+                db.run("INSERT INTO article (id, date, update) VALUES (?, ?, ?);", sh_id, date_id, time, (err) => {
                     if (err) reject(err);
                     else resolve(true);
                 });

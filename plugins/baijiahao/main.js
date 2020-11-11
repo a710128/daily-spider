@@ -8,7 +8,7 @@ const minify = require('html-minifier').minify;
 
 function db_init(db) {
     return new Promise((resolve, reject) => {
-        db.run("CREATE TABLE article (id CHAR(32) NOT NULL, date INT NOT NULL);", (err) => {
+        db.run("CREATE TABLE article (id CHAR(32) NOT NULL, date INT NOT NULL, update INT NOT NULL);", (err) => {
             if (err) reject(err);
             else {
                 db.run("CREATE INDEX qryidx on article (id);", (err) => {
@@ -21,12 +21,19 @@ function db_init(db) {
 }
 
 async function db_query(db, date_id, sh_id) {
+    let time = parseInt(Date.now() / 1000);
     return new Promise((resolve, reject) => {
         db.get("SELECT * FROM article WHERE id = ?", sh_id, (err, row) => {
             if (err) reject(err);
-            else if (row) resolve(false);
+            else if (row) {
+                
+                db.run("UPDATE article SET update = ? WHERE id = ?", time, sh_id, (err) => {
+                    if (err) reject(err);
+                    else resolve(false);
+                });
+            }
             else {
-                db.run("INSERT INTO article (id, date) VALUES (?, ?);", sh_id, date_id, (err) => {
+                db.run("INSERT INTO article (id, date, update) VALUES (?, ?, ?);", sh_id, date_id, time, (err) => {
                     if (err) reject(err);
                     else resolve(true);
                 });
@@ -102,7 +109,7 @@ async function get_author_list() {
         ret.push({
             url: $(".name.fl a.btn").attr("href"),
             topic: author.topic,
-            name: author.name
+            name: author.name,
         });
     }
     return ret;
@@ -130,32 +137,56 @@ function write_author_list_config(fname, data) {
 async function get_info_list(author) {
     let url = author.url;
     let res = await Axios.get(url);
+    let cookie = '';
+    for (let it of res.headers['set-cookie']) {
+        cookie += it.split(";")[0] + ";";
+    }
+    
     let v = /"uk":"([0-9a-zA-Z]+)"/g.exec(res.data);
     if (!v) return [];
     v = v[1];
-    let data_dynamic = (await Axios.get(`https://mbd.baidu.com/webpage?tab=dynamic&num=10&uk=${v}&type=newhome&format=json`)).data.data.dynamic.list;
-    data_dynamic = data_dynamic.map((v) => ({
-        date: v.itemData.ctime,
-        id: v.itemData.nid,
-        data: v.itemData.origin_title,
-        topic: author.topic,
-        author: author.name,
-        type: 'dynamic',
-    }));
-    let data_article = (await Axios.get(`https://mbd.baidu.com/webpage?tab=article&num=10&uk=${v}&type=newhome&format=json`)).data.data.dynamic.list;
-    data_article = data_article.map((v) => ({
-        date: v.itemData.created_at,
-        id: v.itemData.id,
-        data: v.itemData.url,
-        topic: author.topic,
-        author: author.name,
-        type: 'article'
-    }));
+    let data_dynamic = (await Axios.get(`https://mbd.baidu.com/webpage?tab=dynamic&num=10&uk=${v}&type=newhome&format=json`, {
+        headers: {
+            Cookie: cookie
+        }
+    })).data;
+    if (data_dynamic.data && data_dynamic.data.dynamic && data_dynamic.data.dynamic.list) {
+        data_dynamic = data_dynamic.data.dynamic.list;
+        data_dynamic = data_dynamic.map((v) => ({
+            date: v.itemData.ctime,
+            id: v.itemData.nid,
+            data: v.itemData.origin_title,
+            topic: author.topic,
+            author: author.name,
+            type: 'dynamic',
+        }));
+    } else {
+        data_dynamic = [];
+    }
+    
+    let data_article = (await Axios.get(`https://mbd.baidu.com/webpage?tab=article&num=10&uk=${v}&type=newhome&format=json`, {
+        headers: {
+            Cookie: cookie
+        }
+    })).data;
+    if (data_article.data && data_article.data.dynamic && data_article.data.dynamic.list) {
+        data_article = data_article.data.dynamic.list;
+        data_article = data_article.map((v) => ({
+            date: v.itemData.created_at,
+            id: v.itemData.id,
+            data: v.itemData.url,
+            topic: author.topic,
+            author: author.name,
+            type: 'article'
+        }));
+    } else {
+        data_article = [];
+    }
     return data_dynamic.concat( data_article );
 }
 
 async function read_article(url) {
-    let res = Axios.get(url);
+    let res = await Axios.get(url);
     let $ = cheerio.load(res.data, {decodeEntities: false});
     let dom = $("div.article-content");
     dom.find(".bjh-p").removeClass("bjh-p");
@@ -210,7 +241,7 @@ async function main(name, config) {
     
 
     let page_list = [];
-    for (let author of author_list) {
+    for (let author of author_list.slice(0, 2)) {
         for (let result of  await get_info_list(author)) {
             if (await db_query(db, result.date, result.id)) {
                 page_list.push(result);
@@ -251,7 +282,7 @@ async function cleanup(name, config) {
 
     let threshold = parseInt(Date.now() / 1000 - 3600 * 24 * 60);
     await new Promise((resolve, reject) => {
-        db.run("DELETE FROM article WHERE date < ?", threshold, (err) => {
+        db.run("DELETE FROM article WHERE update < ?", threshold, (err) => {
             if (err) reject(err);
             else resolve();
         });

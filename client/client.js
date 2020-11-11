@@ -36,13 +36,13 @@ function startWorker(plugin_path, plugin_name) {
 
 
 // Get last pid
-let pid_file = JSON_CONFIG.pid_file || "/var/run/dailyspider.pid";
+let pid_file = JSON_CONFIG.pid_file || path.join(__dirname, "./dailyspider.pid");
 let last_pid = 0;
 try {
     last_pid = parseInt(fs.readFileSync(pid_file).toString());
 } catch(e) {
-    console.error(e);
 }
+console.log(`Last pid: ${last_pid}`)
 
 // check whether process is running
 if (last_pid) {
