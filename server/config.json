@@ -3,5 +3,5 @@
     "port": 7080,
     "data_dir": "./data",
     "max_file_size": 134217728,
-    "debug": true
+    "debug": false
 }

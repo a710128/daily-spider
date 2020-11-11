@@ -10,6 +10,8 @@ const PLUGINS = Object.keys(JSON_CONFIG.plugins).filter((v) => {
     else return true;
 });
 
+console.log(PLUGINS);
+
 const LOG_FILE_PATH = path.isAbsolute(JSON_CONFIG.log) ? JSON_CONFIG.log : path.join(__dirname, JSON_CONFIG.log);
 
 
@@ -17,7 +19,7 @@ function startWorker(plugin_path, plugin_name) {
     let fout = fs.openSync(path.join( LOG_FILE_PATH, plugin_name + ".log" ), "a");
     let ferr = fs.openSync(path.join( LOG_FILE_PATH, plugin_name + ".error.log" ), "a");
 
-    let child = child_process.fork(path.join(__dirname, "src", "plugins.js"), [plugin_name, plugin_path], {
+    let child = child_process.fork(path.join(__dirname, "src", "plugins.js"), [plugin_name, plugin_path, JSON_CONFIG.authorize_key], {
         silent: true,
         detached: true,
         stdio: [ 'ignore', fout, ferr, 'ipc']

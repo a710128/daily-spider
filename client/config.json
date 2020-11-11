@@ -1,6 +1,7 @@
 {
     "server": "http://127.0.0.1:7080/api",
     "log": "./log/",
+    "authorize_key": "zgy",
     "plugins": {
         "test": {
             "path": "../plugins/test/main.js",

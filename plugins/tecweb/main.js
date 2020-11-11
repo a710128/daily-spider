@@ -9,7 +9,7 @@ const minify = require('html-minifier').minify;
 
 function db_init(db) {
     return new Promise((resolve, reject) => {
-        db.run("CREATE TABLE article (id INT NOT NULL, date INT NOT NULL, update INT NOT NULL);", (err) => {
+        db.run("CREATE TABLE article (id INT NOT NULL, date INT NOT NULL, upd INT NOT NULL);", (err) => {
             if (err) reject(err);
             else {
                 db.run("CREATE INDEX qryidx on article (id, date);", (err) => {
@@ -27,13 +27,13 @@ async function db_query(db, date_id, sh_id) {
         db.get("SELECT * FROM article WHERE id = ? AND date = ?", sh_id, date_id, (err, row) => {
             if (err) reject(err);
             else if (row) {
-                db.run("UPDATE article SET update = ? WHERE id = ? and date = ?", time, sh_id, date_id, (err) => {
+                db.run("UPDATE article SET upd = ? WHERE id = ? and date = ?", time, sh_id, date_id, (err) => {
                     if (err) reject(err);
                     else resolve(false);
                 });
             }
             else {
-                db.run("INSERT INTO article (id, date, update) VALUES (?, ?, ?);", sh_id, date_id, time, (err) => {
+                db.run("INSERT INTO article (id, date, upd) VALUES (?, ?, ?);", sh_id, date_id, time, (err) => {
                     if (err) reject(err);
                     else resolve(true);
                 });

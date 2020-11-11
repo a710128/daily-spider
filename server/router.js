@@ -6,7 +6,7 @@ const util = require("./utils");
 
 var router = express.Router();
 
-const DATA_DIR = path.join(__dirname, JSON_CONFIG.data_dir);
+const DATA_DIR = path.isAbsolute(JSON_CONFIG.data_dir) ? JSON_CONFIG.data_dir : path.join(__dirname, JSON_CONFIG.data_dir);
 
 var global = {
     latest_file: util.getLatestFile(DATA_DIR),
@@ -15,7 +15,7 @@ var global = {
 
 
 router.use((req, res, next) => {
-    if (JSON_CONFIG.debug || req.get("Who-is-Niupi") === "zgy") {
+    if (JSON_CONFIG.debug || req.get("X-Who-is-Niupi") === "zgy") {
         next();
     } else {
         res.status(400).end("Fuck you!");

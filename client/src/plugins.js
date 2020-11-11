@@ -30,6 +30,7 @@ class Client {
 process.on("message", async (msg) => {
     let plugin_name = process.argv[2];
     let plugin_path = process.argv[3];
+    let authorize_key = process.argv[4];
     let config = msg.config;
     let server = msg.server;
     let dry = msg.dry;
@@ -57,7 +58,10 @@ process.on("message", async (msg) => {
             if (!dry) {
                 let res = await Axios.post(server + "/add", ssend, {
                     maxBodyLength: Infinity,
-                    maxContentLength: Infinity
+                    maxContentLength: Infinity,
+                    headers: {
+                        'X-Who-is-Niupi': authorize_key
+                    }
                 });
                 if (res.data.code == 0) {
                     console.log(res.data);
