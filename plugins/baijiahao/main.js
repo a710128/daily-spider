@@ -241,7 +241,7 @@ async function main(name, config) {
     
 
     let page_list = [];
-    for (let author of author_list.slice(0, 2)) {
+    for (let author of author_list) {
         for (let result of  await get_info_list(author)) {
             if (await db_query(db, result.date, result.id)) {
                 page_list.push(result);
