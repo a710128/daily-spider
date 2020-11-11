@@ -250,12 +250,18 @@ async function main(name, config) {
         }
     }
 
+    let skip_count = 0;
     for (let page of page_list) {
-        if (page.type == "article") {
-            page.data = await read_article(page.data);
+        try {
+            if (page.type == "article") {
+                page.data = await read_article(page.data);
+            }
+            this.addResult(page);
+        } catch (e) {
+            skip_count += 1;
         }
-        this.addResult(page);
     }
+    console.log(`Skip ${skip_count} articles.`);
 }
 
 async function cleanup(name, config) {

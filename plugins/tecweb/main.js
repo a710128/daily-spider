@@ -102,14 +102,22 @@ async function main(name, config) {
     if (new_db) await db_init(db);
 
     let news_list = await get_article_list();
+    let skip_count = 0;
+
     for (let news of news_list) {
         let tmp = /([0-9]{4}-[0-9]{2}-[0-9]{2})\/([0-9]+)\.shtml$/.exec(news.url);
         let date = new Date(tmp[1]).valueOf() / 100000;
         let shid = parseInt(tmp[2]);
         if (await db_query(db, date, shid)) {
-            this.addResult(await read_article(news.url, news.topic))
+            try {
+                this.addResult(await read_article(news.url, news.topic))
+            } catch(e) {
+                skip_count ++;
+            }
         }
     }
+    
+    console.log(`Skip ${skip_count} articles.`);
 }
 
 async function cleanup(name, config) {
