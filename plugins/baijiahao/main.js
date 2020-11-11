@@ -182,7 +182,8 @@ async function get_info_list(author) {
     } else {
         data_article = [];
     }
-    return data_dynamic.concat( data_article );
+    let a = [];
+    return data_dynamic.concat( data_article ).filter((v) => !!v.id);
 }
 
 async function read_article(url) {
