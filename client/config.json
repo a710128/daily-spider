@@ -19,6 +19,9 @@
         },
         "baijiahao": {
             "path": "../plugins/baijiahao/main.js"
+        },
+        "bilibili": {
+            "path": "../plugins/bilibili/main.js"
         }
     }
 }
