@@ -186,6 +186,12 @@ async function get_info_list(author) {
     return data_dynamic.concat( data_article ).filter((v) => !!v.id);
 }
 
+function sleep(timeout) {
+    return new Promise((resolve) => {
+        setTimeout(resolve, timeout);
+    });
+}
+
 async function read_article(url) {
     let res = await Axios.get(url);
     let $ = cheerio.load(res.data, {decodeEntities: false});
@@ -257,6 +263,7 @@ async function main(name, config) {
                 page.data = await read_article(page.data);
             }
             this.addResult(page);
+            await sleep(1000); // sleep one second
         } catch (e) {
             skip_count += 1;
         }
