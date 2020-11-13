@@ -22,6 +22,9 @@
         },
         "bilibili": {
             "path": "../plugins/bilibili/main.js"
+        },
+        "weixin": {
+            "path": "../plugins/weixin/main.js"
         }
     }
 }
