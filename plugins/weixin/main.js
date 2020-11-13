@@ -53,7 +53,7 @@ function sleep(timeout) {
 }
 
 async function get_article_list(page_num, sleep_timeout) {
-    page_num = page_num || 1;
+    page_num = page_num || 100;
     sleep_timeout = sleep_timeout || 10;
     let start_url = "https://www.vreadtech.com/";
     let res = await Axios.get(start_url);
@@ -71,7 +71,7 @@ async function get_article_list(page_num, sleep_timeout) {
         }
         last_cid = dom.filter(".cid").attr("vvalue");
         for (let j = 0; j < dom.length; ++ j) {
-            let dom_a = dom.eq(0).find("a.title");
+            let dom_a = dom.eq(j).find("a.title");
             let href = dom_a.attr("href");
             let title = dom_a.text();
             let query = url.parse(href, true).query;
@@ -80,9 +80,10 @@ async function get_article_list(page_num, sleep_timeout) {
                 url: href,
                 biz: query.__biz,
                 mid: query.mid,
-                topic: dom.eq(0).find(".pannel-x a").text().slice(0, -3)
+                topic: dom.eq(j).find(".pannel-x a").text().slice(0, -3)
             });
         }
+        await sleep(sleep_timeout);
     }
     return ret;
 }
@@ -97,7 +98,7 @@ async function read_article(article) {
     }
 }
 
-async function main() {
+async function main(name, config) {
     let db_path = config.db_path ||  path.join(__dirname, "db.sqlite3");
     let new_db = false;
 
