@@ -5,6 +5,7 @@ const fs = require("fs");
 const cheerio = require("cheerio");
 const minify = require('html-minifier').minify;
 
+Axios.defaults.timeout = 30 * 1000;
 
 function db_init(db) {
     return new Promise((resolve, reject) => {

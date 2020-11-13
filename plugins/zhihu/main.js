@@ -3,6 +3,7 @@ const { default: Axios } = require("axios");
 const sqlite3 = require("sqlite3");
 const path = require("path");
 const fs = require("fs");
+Axios.defaults.timeout = 30 * 1000;
 
 const TOPICS = [
     "total",
