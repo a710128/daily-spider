@@ -184,7 +184,7 @@ async function get_info_list(author) {
         data_article = [];
     }
     let a = [];
-    return data_dynamic.concat( data_article ).filter((v) => !!v.id);
+    return data_dynamic.concat( data_article ).filter((v) => !!v.id).filter((v) => !!v.date);
 }
 
 function sleep(timeout) {
