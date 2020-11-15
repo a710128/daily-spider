@@ -31,6 +31,8 @@ function getZhihuHot() {
                 } else {
                     reject(topic);
                 }
+            }).catch(err => {
+                reject(err);
             });
         })
     })).then((res) => {
@@ -95,10 +97,14 @@ function db_set_done(db, qid) {
     });
 }
 
-async function read_question(qid, topic) {
+function sleep(timeout) {
+    return new Promise(resolve => setTimeout(resolve, timeout));
+}
+
+async function read_question(qid, topic, sleep_timeout) {
     let limit = 10;
     let vis_id_set = new Set();
-    
+    sleep_timeout = sleep_timeout || 4000;
     let ret = [];
     let url = `https://www.zhihu.com/api/v4/questions/${qid}/answers?include=data[*].is_normal,admin_closed_comment,reward_info,is_collapsed,annotation_action,annotation_detail,collapse_reason,is_sticky,collapsed_by,suggest_edit,comment_count,can_comment,content,editable_content,voteup_count,reshipment_settings,comment_permission,created_time,updated_time,review_info,relevant_info,question,excerpt,relationship.is_authorized,is_author,voting,is_thanked,is_nothelp,is_labeled,is_recognized,paid_info,paid_info_content;data[*].mark_infos[*].url;data[*].author.follower_count,badge[*].topics;settings.table_of_content.enabled;&limit=${limit}&offset=0&platform=desktop&sort_by=default`;
 
@@ -135,10 +141,11 @@ async function read_question(qid, topic) {
                 else {
                     url = paging.next;
                 }
-                if (ret.length > 500) {
+                if (ret.length > 200) {
                     break;
                 }
             }
+            await sleep(sleep_timeout);
         }
     } catch (e) {
         console.error(`Error request ${qid} `, url, e);
@@ -186,14 +193,20 @@ async function main(name, config) {
         await db_insert_if_not_exists(db, question);
     }
 
+    let skip_cnt = 0;
     for (let question of processing_qs) {
-        let answers = await read_question(question.id, question.topic);
-
-        for (let ans of answers) {
-            this.addResult(ans);
+        try {
+            let answers = await read_question(question.id, question.topic);
+            for (let ans of answers) {
+                this.addResult(ans);
+            }
+            await db_set_done(db, question.id);
+        } catch (e) {
+            skip_cnt ++;
         }
-        await db_set_done(db, question.id);
+
     }
+    console.log(`Skiped ${skip_cnt} questions.`)
 }
 
 async function cleanup(name, config) {
