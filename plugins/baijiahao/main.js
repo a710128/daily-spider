@@ -135,6 +135,19 @@ function write_author_list_config(fname, data) {
 }
 
 
+
+function decode(string) {
+    return string.replace(/&#x([0-9a-f]{1,6});/ig, (entity, code) => {
+      code = parseInt(code, 16);
+  
+      // Don't unescape ASCII characters, assuming they're encoded for a good reason
+      if (code < 0x80) return entity;
+  
+      return String.fromCodePoint(code);
+    });
+}
+
+
 async function get_info_list(author) {
     let url = author.url;
     let res = await Axios.get(url);
@@ -195,7 +208,7 @@ function sleep(timeout) {
 
 async function read_article(url) {
     let res = await Axios.get(url);
-    let $ = cheerio.load(res.data, {decodeEntities: false});
+    let $ = cheerio.load(res.data);
     let dom = $("div.article-content");
     dom.find(".bjh-p").removeClass("bjh-p");
     let imgs = dom.find("img");
@@ -204,7 +217,7 @@ async function read_article(url) {
             if (key != "src") imgs.eq(i).removeAttr(key);
         }
     }
-    return minify(dom.html(), {
+    return minify(decode(dom.html()), {
         removeEmptyAttributes: true,
         collapseWhitespace: true,
         removeEmptyElements: true,

@@ -7,6 +7,18 @@ const minify = require('html-minifier').minify;
 
 Axios.defaults.timeout = 30 * 1000;
 
+function decode(string) {
+    return string.replace(/&#x([0-9a-f]{1,6});/ig, (entity, code) => {
+      code = parseInt(code, 16);
+  
+      // Don't unescape ASCII characters, assuming they're encoded for a good reason
+      if (code < 0x80) return entity;
+  
+      return String.fromCodePoint(code);
+    });
+}
+
+
 function db_init(db) {
     return new Promise((resolve, reject) => {
         db.run("CREATE TABLE article (id INT NOT NULL, tp INT NOT NULL, upd INT NOT NULL);", (err) => {
@@ -22,7 +34,7 @@ function db_init(db) {
 }
 
 async function db_query(db, sh_id, doctype) {
-    let time = parseInt(Date.now() / 100000);
+    let time = parseInt(Date.now() / 1000);
     return new Promise((resolve, reject) => {
         db.get("SELECT * FROM article WHERE id = ? AND tp = ?", sh_id, doctype, (err, row) => {
             if (err) reject(err);
@@ -140,9 +152,7 @@ async function get_articles(max_pageid) {
 async function read_article(article_id) {
     let url = `https://www.bilibili.com/read/cv${article_id}`;
     let res = await Axios.get(url);
-    let $ = cheerio.load(res.data, {
-        decodeEntities: false
-    });
+    let $ = cheerio.load(res.data);
     let dom = $("div.article-holder");
     dom.find("figcaption").remove();
 
@@ -162,7 +172,7 @@ async function read_article(article_id) {
             img_chd.eq(i).remove();
         }
     }
-    return minify(dom.html(), {
+    return minify(decode(dom.html()), {
         removeEmptyAttributes: true,
         collapseWhitespace: true,
         removeEmptyElements: true,

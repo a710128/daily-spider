@@ -3,6 +3,7 @@ const { default: Axios } = require("axios");
 const sqlite3 = require("sqlite3");
 const path = require("path");
 const fs = require("fs");
+const minifier = require("./minifier");
 Axios.defaults.timeout = 30 * 1000;
 
 const TOPICS = [
@@ -125,7 +126,7 @@ async function read_question(qid, topic, sleep_timeout) {
                             type: v.question.type,
                             title: v.question.title
                         },
-                        data: v.content,
+                        data: minifier(v.content),
                         topic: topic
                     };
                 });

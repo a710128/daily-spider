@@ -59,18 +59,29 @@ async function get_article_list() {
     return ret;
 }
 
+function decode(string) {
+    return string.replace(/&#x([0-9a-f]{1,6});/ig, (entity, code) => {
+      code = parseInt(code, 16);
+  
+      // Don't unescape ASCII characters, assuming they're encoded for a good reason
+      if (code < 0x80) return entity;
+  
+      return String.fromCodePoint(code);
+    });
+}
+
+
 async function read_article(url, topic) {
     let res = await Axios.get(url);
-    let $ = cheerio.load(res.data, {
-        decodeEntities: false
-    });
+    let $ = cheerio.load(res.data);
     let dom = $(".content .main_c #content");
     dom.contents().filter(function() {
         return this.nodeType == 8;
     }).remove();
     return {
-        data: minify(dom.html(), {
+        data: minify(decode(dom.html()), {
             collapseWhitespace: true,
+            removeEmptyAttributes: true,
             removeEmptyElements: true,
         }),
         topic: topic,
@@ -143,7 +154,7 @@ async function cleanup(name, config) {
     });
     if (!db) return;
 
-    let threshold = parseInt(Date.now() / 100000 - 36 * 24 * 60);
+    let threshold = parseInt(Date.now() / 1000 - 3600 * 24 * 60);
     await new Promise((resolve, reject) => {
         db.run("DELETE FROM article WHERE date < ?", threshold, (err) => {
             if (err) reject(err);

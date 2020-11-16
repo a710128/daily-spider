@@ -25,6 +25,9 @@
         },
         "weixin": {
             "path": "../plugins/weixin/main.js"
+        },
+        "netease_book": {
+            "path": "../plugins/netease_book/main.js"
         }
     }
 }

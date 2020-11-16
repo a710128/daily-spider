@@ -3,16 +3,17 @@ const sqlite3 = require("sqlite3");
 const path = require("path");
 const fs = require("fs");
 const cheerio = require("cheerio");
-const minify = require('html-minifier').minify;
 
 Axios.defaults.timeout = 30 * 1000;
 
+
+
 function db_init(db) {
     return new Promise((resolve, reject) => {
-        db.run("CREATE TABLE article (id CHAR(28) NOT NULL, date INT NOT NULL, upd INT NOT NULL);", (err) => {
+        db.run("CREATE TABLE article (id CHAR(40) NOT NULL, bid CHAR(24) NOT NULL, upd INT NOT NULL);", (err) => {
             if (err) reject(err);
             else {
-                db.run("CREATE INDEX qryidx on article (id, date);", (err) => {
+                db.run("CREATE INDEX qryidx on article (id, bid);", (err) => {
                     if (err) reject(err);
                     else resolve();
                 });
@@ -21,19 +22,19 @@ function db_init(db) {
     });
 }
 
-async function db_query(db, date_id, sh_id) {
+async function db_query(db, id, bid) {
     let time = parseInt(Date.now() / 1000);
     return new Promise((resolve, reject) => {
-        db.get("SELECT * FROM article WHERE id = ? AND date = ?", sh_id, date_id, (err, row) => {
+        db.get("SELECT * FROM article WHERE id = ? AND bid = ?", id, bid, (err, row) => {
             if (err) reject(err);
             else if (row) {
-                db.run("UPDATE article SET upd = ? WHERE id = ? and date = ?", time, sh_id, date_id, (err) => {
+                db.run("UPDATE article SET upd = ? WHERE id = ? and bid = ?", time, id, bid, (err) => {
                     if (err) reject(err);
                     else resolve(false);
                 });
             }
             else {
-                db.run("INSERT INTO article (id, date, upd) VALUES (?, ?, ?);", sh_id, date_id, time, (err) => {
+                db.run("INSERT INTO article (id, bid, upd) VALUES (?, ?, ?);", id, bid, time, (err) => {
                     if (err) reject(err);
                     else resolve(true);
                 });
@@ -42,29 +43,10 @@ async function db_query(db, date_id, sh_id) {
     });
 }
 
-const PAGE_LIST = {
-    "军事": "https://mil.news.sina.com.cn/",
-    "新闻": "https://news.sina.com.cn/china/",
-    "新闻": "https://news.sina.com.cn/world/",
-    "股票": "https://finance.sina.com.cn/stock/",
-    "财经": "https://finance.sina.com.cn/",
-    "手机": "https://mobile.sina.com.cn/",
-    "探索": "https://tech.sina.com.cn/discovery/",
-    "科技": "https://tech.sina.com.cn/",
-    "体育": "http://sports.sina.com.cn/",
-    "明星": "https://ent.sina.com.cn/star/",
-    "电影": "https://ent.sina.com.cn/film/",
-    "电视": "https://ent.sina.com.cn/tv/",
-    "综艺": "https://ent.sina.com.cn/zongyi/",
-    "音乐": "http://yue.sina.com.cn/",
-    "时装": "https://fashion.sina.com.cn/",
-    "美容": "http://fashion.sina.com.cn/beauty/",
-    "美食": "http://fashion.sina.com.cn/luxury/taste/",
-    "收藏": "http://collection.sina.com.cn/",
-    "教育": "http://edu.sina.com.cn/",
-    "文化": "http://cul.news.sina.com.cn/"
-}
 
+function sleep(timeout) {
+    return new Promise(resolve => setTimeout(resolve, timeout));
+}
 
 function decode(string) {
     return string.replace(/&#x([0-9a-f]{1,6});/ig, (entity, code) => {
@@ -78,27 +60,50 @@ function decode(string) {
 }
 
 
-async function get_article_list() {
-    let regex = /^https:\/\/([^\.]+)\.sina.com.cn\/.*\/([0-9]{4}-[0-9]{2}-[0-9]{2})\/(?:[0-9]+\/)?doc-([a-z0-9]+)\.shtml$/;
+
+const BOOKS = {
+    "caiwei": "http://caiwei.yuedu.163.com/bookUpdateInterface.do?from=original&subject=article&chargeable=no&gender=female&count=30",
+    "guofeng": "http://guofeng.yuedu.163.com/bookUpdateInterface.do?from=original&subject=article&chargeable=no&gender=male&count=30"
+}
+
+const CAT_NAME_MAP = {
+    'caiwei': "采薇",
+    "guofeng": "国风"
+}
+
+async function get_book_list(sleep_timeout) {
+    sleep_timeout = sleep_timeout || 4000;
     let ret = [];
-    for (let key of Object.keys(PAGE_LIST)) {
-        let url = PAGE_LIST[key];
+    for (let cat of Object.keys(BOOKS)) {
+        let url = BOOKS[cat];
         let res = await Axios.get(url);
-        let $ = cheerio.load(res.data);
-        let as = $("a");
-        for (let i = 0; i < as.length; ++ i) {
-            let dom = as.eq(i);
-            let href = dom.attr("href");
-            if (!href) continue;
-            let res = regex.exec(href);
-            if (res) {
-                ret.push({
-                    part: res[1],
-                    topic: key,
-                    date: new Date(res[2]).valueOf() / 100000,
-                    id: res[3],
-                    url: href
-                });
+        let lst = res.data.list;
+        for (let i = 0; i < lst.length; ++ i) {
+            let tmp = /^\/book_reader\/([^\/]+)\/([^\/]+)$/.exec(lst[i].latestArticleUrl);
+            if (tmp) {
+                let book_id = tmp[1];
+                let chap_id = tmp[2];
+                url = `http://${cat}.yuedu.163.com/getBook.do?id=${book_id}`;
+                res = await Axios.get(url);
+                let portions = res.data.portions;
+                if (portions) {
+                    for (let j = 0; j < portions.length; ++ j) {
+                        if (portions[j].id == chap_id) {
+                            ret.push({
+                                author: res.data.author,
+                                book_title: res.data.title,
+                                desc: res.data.shareDescription,
+                                pub: cat,
+                                topic: lst[i].categoryLabel,
+                                book_id: book_id,
+                                chap_id: portions[j].id,
+                                bid: portions[j].bigContentId
+                            });
+                            break;
+                        }
+                    }
+                }
+                await sleep(sleep_timeout);
             }
         }
     }
@@ -106,38 +111,18 @@ async function get_article_list() {
 }
 
 async function read_article(article) {
-    let url = article.url;
+    let url = `http://${article.pub}.yuedu.163.com/getArticleContent.do?sourceUuid=${article.book_id}&articleUuid=${article.chap_id}&bigContentId=${article.bid}`;
     let res = await Axios.get(url);
-    let $ = cheerio.load(res.data);
-    let title = $("h1.main-title").text();
-    let dom = $("div.article");
-    dom.contents().filter(function() {
-        return this.nodeType == 8;
-    }).remove();
-
-    let chd = dom.children();
-    let ret = {
-        title: title,
-        date: article.date,
-        part: article.part,
-        topic: article.topic,
+    let $ = cheerio.load(Buffer.from(res.data.content, "base64").toString());
+    $("#book-bottom").remove();
+    return {
+        data: decode($(".m-content").html()),
+        author: article.author,
+        book_title: article.book_title,
+        desc: article.desc,
+        pub: CAT_NAME_MAP[article.pub],
+        topic: article.topic
     };
-
-    for (let i = 0; i < chd.length; ++ i) {
-        if (chd[i].name == "p") {
-            continue;
-        } else if (chd[i].name == "div" && chd.eq(i).hasClass("img_wrapper")) {
-            let div_dom = chd.eq(i);
-            div_dom.children("img").css({});
-        } else {
-            chd.eq(i).remove();
-        }
-    }
-    ret.data = minify(decode(dom.html()), {
-        collapseWhitespace: true,
-        removeEmptyElements: true,
-    });
-    return ret;
 }
 
 
@@ -164,10 +149,11 @@ async function main(name, config) {
     if (!db) return;
     if (new_db) await db_init(db);
 
-    let article_list = await get_article_list();
+    let article_list = await get_book_list();
+
     let process_article = [];
     for (let article of article_list) {
-        if (await db_query(db, article.date, article.id)) {
+        if (await db_query(db, article.chap_id, article.bid)) {
             process_article.push(article);
         }
     }
@@ -178,6 +164,7 @@ async function main(name, config) {
             this.addResult(await read_article(article));
         } catch (e) {
             // skip error ones
+            console.error(e);
             skip_cnt ++;
         }
     }

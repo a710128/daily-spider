@@ -28,7 +28,7 @@ function db_init(db) {
 }
 
 async function db_query(db, biz, mid) {
-    let time = parseInt(Date.now() / 100000);
+    let time = parseInt(Date.now() / 1000);
     return new Promise((resolve, reject) => {
         db.get("SELECT * FROM article WHERE biz = ? AND mid = ?", biz, mid, (err, row) => {
             if (err) reject(err);

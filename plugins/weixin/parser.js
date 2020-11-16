@@ -9,6 +9,18 @@ const block_tags = [
     "section", "section", "table", "ul"
 ]
 
+function decode(string) {
+    return string.replace(/&#x([0-9a-f]{1,6});/ig, (entity, code) => {
+      code = parseInt(code, 16);
+  
+      // Don't unescape ASCII characters, assuming they're encoded for a good reason
+      if (code < 0x80) return entity;
+  
+      return String.fromCodePoint(code);
+    });
+}
+
+
 function search_build($, dom ) {
     if (dom[0].nodeType == 1) {
         let tag_name = dom[0].tagName.toLowerCase();
@@ -93,10 +105,10 @@ function minify_html($) {
 }
 
 module.exports = function(raw_html) {
-    let $ = cheerio.load(raw_html, {decodeEntities: false});
+    let $ = cheerio.load(raw_html);
     let article = $("#js_content");
-    $ = cheerio.load(search_build($, article).text, {decodeEntities: false});
-    return  minify(minify_html($), {
+    $ = cheerio.load(search_build($, article).text);
+    return  minify(decode(minify_html($)), {
         removeEmptyAttributes: true,
         collapseWhitespace: true,
         removeEmptyElements: true,
