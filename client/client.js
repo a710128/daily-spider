@@ -32,8 +32,10 @@ function startWorker(plugin_path, plugin_name) {
     });
 
     child.on("exit", (code) => {
+        child.stoped = true;
         console.log(new Date().toISOString(), plugin_name, "stoped with code", code);
     });
+    return child;
 }
 
 
@@ -57,6 +59,8 @@ if (last_pid) {
 // set new pid
 fs.writeFileSync( pid_file, process.pid.toString() );
 
+// start plugins
+let children = [];
 for (let i in PLUGINS) {
     let plugin_name = PLUGINS[i];
 
@@ -66,5 +70,32 @@ for (let i in PLUGINS) {
     } else {
         plugin_path = path.join(__dirname, JSON_CONFIG.plugins[plugin_name].path);
     }
-    startWorker(plugin_path, plugin_name);
+    children.push( startWorker(plugin_path, plugin_name) );
 }
+
+// kill plugins
+
+function killall(signal) {
+    for (let child of children) {
+        if (!child.stoped) {
+            console.log(`Kill ${child.pid}`)
+            child.kill(signal);
+        }
+    }
+}
+
+function exit_handler() {
+    console.log("SIGTERM!");
+    if (!killing_process) {
+        killing_process = true;
+        killall("SIGTERM");
+        setTimeout(() => {
+            killall("SIGKILL");
+            process.exit(1);
+        }, 1000);
+    }
+}
+
+let killing_process = false;
+process.on("SIGTERM", exit_handler);
+process.on("SIGINT", exit_handler);
