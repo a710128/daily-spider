@@ -7,6 +7,8 @@ resources:
 - name: gitrepo
   type: git
   source: {uri: "https://github.com/a710128/daily-spider"}
+  check_every: 24h
+  webhook_token: ((webhook_token))
 - name: target-server
   type: ssh
   source:
