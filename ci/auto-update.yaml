@@ -40,4 +40,4 @@ jobs:
         git pull
       placeholders:
         - name: "<user_name>"
-          value: "ssh_user"
+          value: ((ssh_user))
