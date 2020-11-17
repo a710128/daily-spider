@@ -149,6 +149,15 @@ async function get_articles(max_pageid) {
     return ret;
 }
 
+function search_build( $, dom ) {
+    dom.removeAttr("class");
+    dom.removeAttr("style");
+    let chd = dom.children();
+    for (let i = 0; i < chd.length; ++ i) {
+        search_build($, chd.eq(i));
+    }
+}
+
 async function read_article(article_id) {
     let url = `https://www.bilibili.com/read/cv${article_id}`;
     let res = await Axios.get(url);
@@ -172,6 +181,7 @@ async function read_article(article_id) {
             img_chd.eq(i).remove();
         }
     }
+    search_build( $, dom );
     return minify(decode(dom.html()), {
         removeEmptyAttributes: true,
         collapseWhitespace: true,
