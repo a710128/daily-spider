@@ -15,11 +15,19 @@ function search_build( $, dom ) {
         if (tag_name === "figure") {
             let img = dom.find("img");
             let src = img.attr("data-original");
-            dom.replaceWith(
-                $.html(
-                    $("<img>").attr("src", src)
-                )
-            );
+            if (!src) {
+                src = img.attr("data-actualsrc");
+            }
+            if (!!src) {
+                dom.html(
+                    $.html(
+                        $("<img>").attr("src", src)
+                    )
+                );
+            }
+            for (let key of Object.keys(dom.attr())) {
+                dom.removeAttr(key);
+            }
         } else {
             for (let key of Object.keys(dom.attr())) {
                 dom.removeAttr(key);
@@ -51,7 +59,9 @@ module.exports = function(raw_html) {
     let article = $("body");
     let contents = article.contents();
     for (let i = 0; i < contents.length; ++ i) {
+        // console.log(">>>", decode(contents.eq(i).html()));
         search_build( $, contents.eq(i) );
+        // console.log("<<<", decode(contents.eq(i).html()));
     }
     return  minify(decode(article.html()), {
         removeEmptyAttributes: true,
