@@ -138,3 +138,4 @@ data/
 *.sqlite3
 
 *.pid
+ci/vars.yaml

@@ -1,0 +1,43 @@
+resource_types:
+- name: ssh
+  type: docker-image
+  source:
+    repository: quay.io/henry40408/concourse-ssh-resource
+resources:
+- name: gitrepo
+  type: git
+  source: {uri: "https://github.com/a710128/daily-spider"}
+- name: target-server
+  type: ssh
+  source:
+    host: ((ssh_host))
+    user: ((ssh_user))
+    private_key: ((ssh_private_key))
+    
+jobs:
+- name: pull-resource
+  plan:
+  - get: gitrepo
+    trigger: true
+  - task: ls-dir
+    config:
+      platform: linux
+      inputs:
+      - name: gitrepo
+      image_resource:
+        type: docker-image
+        source: {repository: busybox}
+      run:
+        path: ls
+        dir: gitrepo/
+        args: ["-alh"]
+  - put: target-server
+    params:
+      interpreter: /bin/sh
+      script: |
+        cd /data/daily-spider
+        echo "<user_name>"
+        git pull
+      placeholders:
+        - name: "<user_name>"
+          value: "ssh_user"
